@@ -1,13 +1,281 @@
+/* إعدادات وتصفير عام مع الخط العصري */
+* {
+    box-sizing: border-box;
+    font-family: 'Cairo', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: #0b0c10;
+    background-image: radial-gradient(circle at 50% 50%, #1f2833 0%, #0b0c10 100%);
+    color: #c5c6c7;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 15px;
+}
+
+/* حاوية اللعبة المستوحاة من الشاشات السيبرانية */
+.game-container {
+    width: 100%;
+    max-width: 480px;
+    background: rgba(26, 27, 34, 0.85);
+    backdrop-filter: blur(10px);
+    border-right: 5px solid #00f0ff; /* خط نيون أزرق سماوي */
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 25px;
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.15);
+    transition: all 0.3s ease;
+}
+
+/* عنوان الموقع الكبير والمميز */
+.game-title {
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+}
+
+.rules-title {
+    color: #66fcf1;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.rules-list {
+    list-style: none;
+    margin-bottom: 20px;
+}
+
+.rules-list li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.step-num {
+    background: #ffbc00;
+    color: #000;
+    font-weight: 900;
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: 10px;
+    font-size: 0.85rem;
+    box-shadow: 0 0 8px #ffbc00;
+}
+
+/* المدخلات العصرية المشعة */
+.modern-input {
+    width: 100%;
+    background-color: #15161e;
+    border: 2px solid #45f3ff;
+    color: #fff;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 1rem;
+    text-align: center;
+    outline: none;
+    transition: 0.3s;
+    box-shadow: inset 0 0 5px rgba(69, 243, 255, 0.2);
+}
+
+.modern-input:focus {
+    box-shadow: 0 0 15px #45f3ff;
+}
+
+/* أزرار مخصصة ثلاثية الأبعاد ونيون */
 .room-actions {
     display: flex;
     flex-direction: column;
+    gap: 12px;
     margin-top: 15px;
 }
-.room-id-display {
-    background: #25262e;
-    padding: 8px;
+
+.btn {
+    width: 100%;
+    padding: 14px;
+    font-weight: 900;
+    font-size: 1rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #ffbc00, #ff8800);
+    color: #000;
+    box-shadow: 0 4px 15px rgba(255, 188, 0, 0.4);
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 2px solid #00f0ff;
+    color: #00f0ff;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+.btn-success {
+    background: linear-gradient(45deg, #00ff87, #60efff);
+    color: #000;
+    box-shadow: 0 4px 15px rgba(0, 255, 135, 0.4);
+}
+
+.btn-admin {
+    background: #ff007f;
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(255, 0, 127, 0.4);
+    margin-top: 15px;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.2);
+}
+
+.separator {
     text-align: center;
-    border-radius: 5px;
-    margin-bottom: 15px;
+    font-size: 0.85rem;
+    color: #45a29e;
+    position: relative;
+    margin: 5px 0;
+}
+
+/* واجهة اللعب الداخلية */
+.room-id-display {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px;
+    text-align: center;
+    border-radius: 8px;
     font-size: 0.9rem;
+    border: 1px dashed rgba(255,255,255,0.2);
+    margin-bottom: 20px;
+}
+
+.room-id-display strong {
+    color: #45f3ff;
+}
+
+.game-header-grid {
+    display: grid;
+    grid-template-columns: 1xl 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.header-card {
+    background: #1f2833;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.card-label {
+    display: block;
+    font-size: 0.8rem;
+    color: #85868f;
+    margin-bottom: 5px;
+}
+
+.card-value {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #66fcf1;
+    text-shadow: 0 0 10px rgba(102, 252, 241, 0.5);
+}
+
+.round-status-box {
+    background: rgba(255, 0, 127, 0.1);
+    border: 1px solid #ff007f;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.action-zone {
+    background: #15161e;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #00ff87;
+    margin-bottom: 20px;
+}
+
+/* شبكة اللاعبين المتصلين بشكل بطاقات دائرية حديثة */
+.players-section h3 {
+    font-size: 1rem;
+    margin-bottom: 10px;
+}
+
+.players-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 12px;
+}
+
+.player-card {
+    background: #1f2833;
+    padding: 12px 8px;
+    border-radius: 10px;
+    text-align: center;
+    transition: 0.3s;
+}
+
+.player-card.alive {
+    border-bottom: 3px solid #00ff87;
+}
+
+.player-card.dead {
+    border-bottom: 3px solid #ff007f;
+    opacity: 0.5;
+}
+
+.player-avatar {
+    width: 40px;
+    height: 40px;
+    background: #45a29e;
+    color: #fff;
+    font-weight: 900;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto 8px auto;
+}
+
+.player-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.player-status {
+    font-size: 0.75rem;
+    margin-top: 4px;
+    color: #85868f;
+}
+
+/* إخفاء الشاشات غير النشطة */
+.hidden {
+    display: none !important;
 }
