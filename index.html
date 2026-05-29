@@ -3,28 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>King Anwar - لعبة ريبليكا</title>
+    <title>King Anwar - Gaming Hub</title>
     <link rel="stylesheet" href="style.css">
-    <!-- استدعاء خط جوجول العسكري والعصري Cairo -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
-    <!-- مكتبة PeerJS للربط المباشر بين الأصدقاء -->
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 </head>
 <body>
 
     <div class="game-container animate-glow">
-        <!-- شاشة الدخول العصرية -->
-        <div id="login-screen" class="screen">
-            <h1 class="game-title">KING ANWAR</h1>
-            <p class="rules-title">📜 طريقة اللعب:</p>
-            <ul class="rules-list">
-                <li><span class="step-num">1</span> اكتب اسمك واصنع غرفة أو انضم لأصدقائك.</li>
-                <li><span class="step-num">2</span> يتم اختيار حرف عشوائي ونوع عشوائي في كل جولة.</li>
-                <li><span class="step-num">3</span> يتم اختيار لاعب عشوائي ليرسل الكلمة المناسبة للحرف.</li>
-                <li><span class="step-num">4</span> آخر لاعب يصمد دون خطأ يفوز بالتحدي!</li>
-            </ul>
+        <h1 class="main-hub-title">KING ANWAR HUB</h1>
+        
+        <div id="hub-screen" class="screen">
+            <p class="hub-subtitle">اختر اللعبة التي تريد خوض معركتها مع أصدقائك:</p>
+            <div class="hub-grid">
+                <div class="hub-card" id="select-replica">
+                    <div class="hub-icon">🎮</div>
+                    <h3>لعبة ريبليكا</h3>
+                    <p>أسرع منافسة في "اسم، حيوان، نبات" بنظام الصمود.</p>
+                </div>
+                <div class="hub-card" id="select-mafia">
+                    <div class="hub-icon">🕵️‍♂️</div>
+                    <h3>لعبة مافيا</h3>
+                    <p>خداع، تصويت، ومحاولة كشف المافيا قبل القضاء على المواطنين.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="login-screen" class="screen hidden">
+            <button id="back-to-hub-btn" class="btn-back">⬅️ العودة للرئيسية</button>
+            <h2 id="selected-game-title" class="game-title">اسم اللعبة</h2>
+            
+            <div id="rules-box"></div>
             
             <input type="text" id="username-input" class="modern-input" placeholder="👤 اكتب اسمك هنا..." maxlength="15">
             
@@ -36,40 +47,53 @@
             </div>
         </div>
 
-        <!-- شاشة اللعب الرئيسية -->
         <div id="game-screen" class="screen hidden">
             <div class="room-id-display">
                 رمز الغرفة للمشاركة: <strong id="current-room-id">-</strong>
             </div>
-            
-            <div class="game-header-grid">
-                <div class="header-card">
-                    <span class="card-label">الحرف الحالي</span>
-                    <span id="letter-display" class="card-value">-</span>
+
+            <div id="replica-interface" class="hidden">
+                <div class="game-header-grid">
+                    <div class="header-card">
+                        <span class="card-label">الحرف الحالي</span>
+                        <span id="letter-display" class="card-value">-</span>
+                    </div>
+                    <div class="header-card">
+                        <span class="card-label">المطلوب</span>
+                        <span id="category-display" class="card-value">-</span>
+                    </div>
                 </div>
-                <div class="header-card">
-                    <span class="card-label">المطلوب</span>
-                    <span id="category-display" class="card-value">-</span>
+                <div id="replica-action-area" class="action-zone hidden">
+                    <input type="text" id="replica-answer-input" class="modern-input" placeholder="🚀 اكتب الإجابة بسرعة...">
+                    <button id="replica-submit-btn" class="btn btn-success">إرسال الجواب ✅</button>
                 </div>
             </div>
 
-            <div class="round-status-box">
-                <p id="turn-instruction">في انتظار المضيف لبدء المعركة...</p>
+            <div id="mafia-interface" class="hidden">
+                <div class="role-box">
+                    <span class="card-label">دورك السري في هذه الجولة:</span>
+                    <span id="mafia-role-display" class="card-value">في انتظار التوزيع...</span>
+                </div>
+                <div class="round-status-box" id="mafia-phase-box">
+                    المرحلة الحالية: <span id="mafia-phase">انتظار اللاعبين</span>
+                </div>
+                <div id="mafia-action-area" class="action-zone hidden">
+                    <p id="mafia-action-instruction">اختر شخصاً للتصويت ضده أو حمايته:</p>
+                    <select id="mafia-vote-select" class="modern-input" style="margin-bottom: 10px;"></select>
+                    <button id="mafia-vote-btn" class="btn btn-success">تأكيد التصويت 🎯</button>
+                </div>
             </div>
 
-            <!-- ساحة الإجابة السريعة -->
-            <div id="action-area" class="action-zone hidden">
-                <input type="text" id="answer-input" class="modern-input pulse-border" placeholder="🚀 اكتب الإجابة بسرعة الفلاش...">
-                <button id="submit-btn" class="btn btn-success">إرسال الجواب ✅</button>
+            <div class="round-status-box" style="margin-top: 15px;">
+                <p id="turn-instruction">في انتظار بدء المعركة...</p>
             </div>
 
-            <!-- قائمة اللاعبين المتصلين بشكل بطاقات مصغرة -->
             <div class="players-section">
-                <h3>🎮 المقاتلون المتصلون:</h3>
+                <h3 id="players-count-title">🎮 المقاتلون المتصلون (0):</h3>
                 <div id="players-grid" class="players-grid"></div>
             </div>
 
-            <button id="start-game-btn" class="btn btn-admin hidden">ابدأ الجولة التالية 🔥</button>
+            <button id="start-game-btn" class="btn btn-admin hidden">ابدأ اللعبة 🔥</button>
         </div>
     </div>
 
@@ -81,36 +105,74 @@
         let myId = "";
         let myUsername = "";
         let isHost = false;
+        let currentGame = ""; // إما "replica" أو "mafia"
 
+        // معطيات ريبليكا
         const categories = ["اسم", "حيوان", "نبات", "جماد", "دولة"];
         const letters = "أبتثجحخدذرزسشصضطظعغفقكلمنهـوي";
 
+        // عناصر الشاشات
+        const hubScreen = document.getElementById('hub-screen');
         const loginScreen = document.getElementById('login-screen');
         const gameScreen = document.getElementById('game-screen');
         const usernameInput = document.getElementById('username-input');
         const roomIdInput = document.getElementById('room-id-input');
         const currentRoomId = document.getElementById('current-room-id');
         const playersGrid = document.getElementById('players-grid');
+        const playersCountTitle = document.getElementById('players-count-title');
         const startBtn = document.getElementById('start-game-btn');
-        const letterDisplay = document.getElementById('letter-display');
-        const categoryDisplay = document.getElementById('category-display');
         const turnInstruction = document.getElementById('turn-instruction');
-        const actionArea = document.getElementById('action-area');
-        const answerInput = document.getElementById('answer-input');
-        const submitBtn = document.getElementById('submit-btn');
 
+        // قوانين اللعبتين المكتوبة في الصور
+        const rulesData = {
+            replica: `
+                <p class="rules-title">📜 طريقة لعب ريبليكا:</p>
+                <ul class="rules-list">
+                    <li><span class="step-num">1</span> اضغط على الزر أدناه لدخول اللعبة.</li>
+                    <li><span class="step-num">2</span> يتم اختيار حرف عشوائي كل جولة.</li>
+                    <li><span class="step-num">3</span> لكل نوع: اسم، حيوان، نبات، جماد ودولة، يتم اختيار لاعب عشوائي ليرسل الكلمة التي تناسب الحرف.</li>
+                    <li><span class="step-num">4</span> آخر لاعب يفوز فاللعبة.</li>
+                </ul>`,
+            mafia: `
+                <p class="rules-title">📜 طريقة لعب مافيا:</p>
+                <ul class="rules-list">
+                    <li><span class="step-num">1</span> شارك في اللعبة بالضغظ على الزر أدناه.</li>
+                    <li><span class="step-num">2</span> سيتم توزيع اللاعبين على مافيا، مواطنين وأيضاً طبيب واحد بشكل عشوائي.</li>
+                    <li><span class="step-num">3</span> في كل جولة، ستصوت المافيا لطرد شخص واحد من اللعبة. ثم سيصوت الطبيب لحماية شخص واحد من المافيا. وفي النهاية الجولة، سيحاول جميع اللاعبين التصويت وطرد إحدى أعضاء المافيا.</li>
+                    <li><span class="step-num">4</span> إذا تم طرد جميع المافيا، سيفوز المواطنين، وإذا كانت المافيا تساوي عدد المواطنين، فستفوز المافيا.</li>
+                </ul>`
+        };
+
+        // الانتقال من الهاب لشاشة الدخول
+        document.getElementById('select-replica').addEventListener('click', () => openLogin('replica', 'KING ANWAR - REPLICA'));
+        document.getElementById('select-mafia').addEventListener('click', () => openLogin('mafia', 'KING ANWAR - MAFIA'));
+        document.getElementById('back-to-hub-btn').addEventListener('click', () => {
+            loginScreen.classList.add('hidden');
+            hubScreen.classList.remove('hidden');
+        });
+
+        function openLogin(gameKey, title) {
+            currentGame = gameKey;
+            document.getElementById('selected-game-title').textContent = title;
+            document.getElementById('rules-box').innerHTML = rulesData[gameKey];
+            hubScreen.classList.add('hidden');
+            loginScreen.classList.remove('hidden');
+        }
+
+        // إنشاء غرفة
         document.getElementById('create-room-btn').addEventListener('click', () => {
             myUsername = usernameInput.value.trim();
             if(!myUsername) return alert('الرجاء كتابة اسمك أولاً!');
             isHost = true;
-            const roomId = 'ANWAR-' + Math.floor(1000 + Math.random() * 9000);
+            const prefix = currentGame === 'replica' ? 'REP-' : 'MAF-';
+            const roomId = prefix + Math.floor(1000 + Math.random() * 9000);
             peer = new Peer(roomId);
 
             peer.on('open', (id) => {
                 myId = id;
                 initGameUI(id);
                 startBtn.classList.remove('hidden');
-                players.push({ id: myId, username: myUsername, isAlive: true });
+                players.push({ id: myId, username: myUsername, isAlive: true, role: 'مواطن', votedFor: null });
                 updatePlayersUI();
             });
 
@@ -118,17 +180,17 @@
                 connections.push(connection);
                 connection.on('data', (data) => {
                     if(data.type === 'join') {
-                        players.push({ id: connection.peer, username: data.username, isAlive: true });
+                        players.push({ id: connection.peer, username: data.username, isAlive: true, role: 'مواطن', votedFor: null });
                         updatePlayersUI();
                         broadcast({ type: 'update_players', players: players });
                     }
-                    if(data.type === 'submit_answer') {
-                        handleAnswer(connection.peer, data.answer);
-                    }
+                    if(data.type === 'submit_answer') handleReplicaAnswer(connection.peer, data.answer);
+                    if(data.type === 'submit_mafia_vote') handleMafiaVote(connection.peer, data.targetId);
                 });
             });
         });
 
+        // الانضمام لغرفة
         document.getElementById('join-room-btn').addEventListener('click', () => {
             myUsername = usernameInput.value.trim();
             const targetRoomId = roomIdInput.value.trim().toUpperCase();
@@ -144,13 +206,10 @@
                     conn.send({ type: 'join', username: myUsername });
                 });
                 conn.on('data', (data) => {
-                    if(data.type === 'update_players') {
-                        players = data.players;
-                        updatePlayersUI();
-                    }
-                    if(data.type === 'new_round') {
-                        startNewRoundClient(data);
-                    }
+                    if(data.type === 'update_players') { players = data.players; updatePlayersUI(); }
+                    if(data.type === 'new_replica_round') startNewReplicaRound(data);
+                    if(data.type === 'mafia_init') startMafiaGame(data);
+                    if(data.type === 'mafia_phase_change') handleMafiaPhaseChange(data);
                 });
             });
         });
@@ -159,74 +218,196 @@
             currentRoomId.textContent = roomId;
             loginScreen.classList.add('hidden');
             gameScreen.classList.remove('hidden');
+            if(currentGame === 'replica') document.getElementById('replica-interface').classList.remove('hidden');
+            if(currentGame === 'mafia') document.getElementById('mafia-interface').classList.remove('hidden');
         }
 
         function updatePlayersUI() {
             playersGrid.innerHTML = '';
+            playersCountTitle.textContent = `🎮 المقاتلون المتصلون (${players.length}/15):`; // محاكاة العداد
             players.forEach(p => {
                 const card = document.createElement('div');
                 card.className = `player-card ${p.isAlive ? 'alive' : 'dead'}`;
+                // إذا كانت اللعبة مافيا وأنت مضيف أو هذا كرتك الشخصي، يظهر دورك
+                let roleBadge = "";
+                if(currentGame === 'mafia' && (p.id === myId || isHost)) {
+                    roleBadge = `<div class="role-badge">${p.role}</div>`;
+                }
                 card.innerHTML = `
                     <div class="player-avatar">${p.username[0].toUpperCase()}</div>
                     <div class="player-name">${p.username}</div>
+                    ${roleBadge}
                     <div class="player-status">${p.isAlive ? '🟢 نشط' : '💀 خسر'}</div>
                 `;
                 playersGrid.appendChild(card);
             });
         }
 
-        function broadcast(data) {
-            connections.forEach(c => { if(c.open) c.send(data); });
-        }
+        function broadcast(data) { connections.forEach(c => { if(c.open) c.send(data); }); }
 
+        // زر البدء الرئيسي
         startBtn.addEventListener('click', () => {
             if(!isHost) return;
-            const alivePlayers = players.filter(p => p.isAlive);
-            if(alivePlayers.length === 0) return alert('لا يوجد لاعبين أحياء للبدء!');
-            const randomLetter = letters[Math.floor(Math.random() * letters.length)];
-            const randomCat = categories[Math.floor(Math.random() * categories.length)];
-            const activePlayer = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
-
-            const roundData = {
-                type: 'new_round',
-                letter: randomLetter,
-                category: randomCat,
-                activePlayerId: activePlayer.id
-            };
-            broadcast(roundData);
-            startNewRoundClient(roundData);
+            if(currentGame === 'replica') {
+                const alive = players.filter(p => p.isAlive);
+                const randomLetter = letters[Math.floor(Math.random() * letters.length)];
+                const randomCat = categories[Math.floor(Math.random() * categories.length)];
+                const activePlayer = alive[Math.floor(Math.random() * alive.length)];
+                const data = { type: 'new_replica_round', letter: randomLetter, category: randomCat, activePlayerId: activePlayer.id };
+                broadcast(data); startNewReplicaRound(data);
+            } else if(currentGame === 'mafia') {
+                if(players.length < 3) return alert('تحتاج إلى 3 لاعبين على الأقل للعب مافيا!');
+                // توزيع الأدوار عشوائياً
+                let shuffled = [...players];
+                shuffled.sort(() => Math.random() - 0.5);
+                shuffled[0].role = 'مافيا';
+                shuffled[1].role = 'طبيب';
+                for(let i=2; i<shuffled.length; i++) shuffled[i].role = 'مواطن';
+                
+                broadcast({ type: 'mafia_init', players: players });
+                startMafiaGame({ players: players });
+            }
         });
 
-        function startNewRoundClient(data) {
-            letterDisplay.textContent = data.letter;
-            categoryDisplay.textContent = data.category;
-            answerInput.value = '';
+        // ================= منطق ريبليكا =================
+        function startNewReplicaRound(data) {
+            document.getElementById('letter-display').textContent = data.letter;
+            document.getElementById('category-display').textContent = data.category;
+            document.getElementById('replica-answer-input').value = '';
             const activePlayer = players.find(p => p.id === data.activePlayerId);
 
             if(data.activePlayerId === myId) {
-                turnInstruction.innerHTML = "⚡️ <span style='color:#ff007f;'>دورك أنت الآن! أجب بسرعة!</span>";
-                actionArea.classList.remove('hidden');
-                answerInput.focus();
+                turnInstruction.innerHTML = "⚡️ <span style='color:#00f0ff;'>دورك أنت! أجب بسرعة!</span>";
+                document.getElementById('replica-action-area').classList.remove('hidden');
             } else {
-                turnInstruction.textContent = `انتظر.. اللاعب [ ${activePlayer ? activePlayer.username : 'مجهول'} ] يفكر الآن 🤔`;
-                actionArea.classList.add('hidden');
+                turnInstruction.textContent = `دور اللاعب: [ ${activePlayer ? activePlayer.username : 'مجهول'} ]`;
+                document.getElementById('replica-action-area').classList.add('hidden');
             }
         }
 
-        submitBtn.addEventListener('click', () => {
-            const answer = answerInput.value.trim();
-            if(!answer) return;
-            if(isHost) { handleAnswer(myId, answer); } else { conn.send({ type: 'submit_answer', answer: answer }); }
+        document.getElementById('replica-submit-btn').addEventListener('click', () => {
+            const ans = document.getElementById('replica-answer-input').value.trim();
+            if(!ans) return;
+            if(isHost) handleReplicaAnswer(myId, ans); else conn.send({ type: 'submit_answer', answer: ans });
         });
 
-        function handleAnswer(playerId, answer) {
-            const currentLetter = letterDisplay.textContent;
-            const player = players.find(p => p.id === playerId);
+        function handleReplicaAnswer(playerId, answer) {
+            const currentLetter = document.getElementById('letter-display').textContent;
             if(answer.startsWith(currentLetter)) {
-                alert(`🎯 كفو! إجابة صحيحة من ${player.username}. جاهز للجولة التالية؟`);
-                actionArea.classList.add('hidden');
+                alert(`🎯 إجابة صحيحة! اضغط على زر "ابدأ اللعبة" لجولة تالية.`);
+                document.getElementById('replica-action-area').classList.add('hidden');
             } else {
-                alert(`💥 خطأ! الكلمة "${answer}" لا تبدأ بحرف (${currentLetter})`);
+                alert(`💥 خطأ! لم تبدأ بحرف ${currentLetter}`);
+            }
+        }
+
+        // ================= منطق مافيا =================
+        let currentPhase = "night_mafia"; 
+        function startMafiaGame(data) {
+            players = data.players;
+            updatePlayersUI();
+            const myData = players.find(p => p.id === myId);
+            document.getElementById('mafia-role-display').textContent = myData.role;
+            if(myData.role === 'مافيا') document.getElementById('mafia-role-display').style.color = '#ff007f';
+            if(myData.role === 'طبيب') document.getElementById('mafia-role-display').style.color = '#00ff87';
+            
+            goToMafiaPhase("night_mafia");
+        }
+
+        function goToMafiaPhase(phase) {
+            currentPhase = phase;
+            if(isHost) broadcast({ type: 'mafia_phase_change', phase: phase });
+            
+            const myData = players.find(p => p.id === myId);
+            const actionArea = document.getElementById('mafia-action-area');
+            const select = document.getElementById('mafia-vote-select');
+            
+            select.innerHTML = '';
+            players.filter(p => p.isAlive && p.id !== myId).forEach(p => {
+                select.innerHTML += `<option value="${p.id}">${p.username}</option>`;
+            });
+
+            actionArea.classList.add('hidden');
+
+            if(phase === "night_mafia") {
+                document.getElementById('mafia-phase').textContent = "الليل (دور المافيا) 🌙";
+                turnInstruction.textContent = "المافيا تختار ضحيتها الآن بتكتم...";
+                if(myData.role === 'مافيا' && myData.isAlive) {
+                    actionArea.classList.remove('hidden');
+                    document.getElementById('mafia-action-instruction').textContent = "اختر مواطناً لتصفيته:";
+                }
+            } else if(phase === "night_doctor") {
+                document.getElementById('mafia-phase').textContent = "الليل (دور الطبيب) 🏥";
+                turnInstruction.textContent = "الطبيب يختار شخصاً لإنقاذه...";
+                if(myData.role === 'طبيب' && myData.isAlive) {
+                    actionArea.classList.remove('hidden');
+                    document.getElementById('mafia-action-instruction').textContent = "اختر لاعباً لحمايته:";
+                }
+            } else if(phase === "day_vote") {
+                document.getElementById('mafia-phase').textContent = "النهار (تصويت جماعي) ☀️";
+                turnInstruction.textContent = "تناقشوا وصوتوا لطرد المافيا المشتبه به!";
+                if(myData.isAlive) {
+                    actionArea.classList.remove('hidden');
+                    document.getElementById('mafia-action-instruction').textContent = "صوّت ضد من تشتبه به:";
+                }
+            }
+        }
+
+        function handleMafiaPhaseChange(data) { goToMafiaPhase(data.phase); }
+
+        document.getElementById('mafia-vote-btn').addEventListener('click', () => {
+            const targetId = document.getElementById('mafia-vote-select').value;
+            if(isHost) handleMafiaVote(myId, targetId); else conn.send({ type: 'submit_mafia_vote', targetId: targetId });
+            document.getElementById('mafia-action-area').classList.add('hidden');
+        });
+
+        let phaseVotes = {};
+        function handleMafiaVote(voterId, targetId) {
+            phaseVotes[voterId] = targetId;
+            const activeVotersNeeded = players.filter(p => {
+                if(!p.isAlive) return false;
+                if(currentPhase === "night_mafia") return p.role === 'مافيا';
+                if(currentPhase === "night_doctor") return p.role === 'طبيب';
+                return true; // في النهار الكل يصوت
+            });
+
+            if(Object.keys(phaseVotes).length >= activeVotersNeeded.length) {
+                // انتهاء مرحلة التصويت الحالية ومعالجتها عند الـ Host
+                let votesArray = Object.values(phaseVotes);
+                let mostVoted = votesArray.sort((a,b) => votesArray.filter(v => v===a).length - votesArray.filter(v => v===b).length).pop();
+                phaseVotes = {};
+
+                if(currentPhase === "night_mafia") {
+                    goToMafiaPhase("night_doctor");
+                } else if(currentPhase === "night_doctor") {
+                    // محاكاة حماية الطبيب أو القتل
+                    let killedPlayer = players.find(p => p.id === mostVoted);
+                    killedPlayer.isAlive = false; // للتسهيل هنا سنقتله مباشرة
+                    alert(`💥 استيقظ الجميع.. تم تصفية المواطن: ${killedPlayer.username}`);
+                    updatePlayersUI();
+                    goToMafiaPhase("day_vote");
+                } else if(currentPhase === "day_vote") {
+                    let expelledPlayer = players.find(p => p.id === mostVoted);
+                    expelledPlayer.isAlive = false;
+                    alert(`⚖️ بتصويت الأغلبية، تم طرد: ${expelledPlayer.username} وكان دوره (${expelledPlayer.role})`);
+                    updatePlayersUI();
+                    checkMafiaWinConditions();
+                }
+            }
+        }
+
+        function checkMafiaWinConditions() {
+            let mafiaCount = players.filter(p => p.isAlive && p.role === 'مافيا').length;
+            let citizensCount = players.filter(p => p.isAlive && p.role !== 'مافيا').length;
+
+            if(mafiaCount === 0) {
+                alert("🎉 مبروك! انتصر المواطنون وتم إبادة المافيا الكامنة!");
+                location.reload();
+            } else if(mafiaCount >= citizensCount) {
+                alert("💀 فرضت المافيا سيطرتها التامة وفازت بالجولة!");
+                location.reload();
+            } else {
+                goToMafiaPhase("night_mafia");
             }
         }
     </script>
