@@ -3,72 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لعبة ريبليكا - Replica</title>
+    <title>لعبة ريبليكا - نسخة P2P</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <!-- استدعاء مكتبة PeerJS للربط المباشر بين الأجهزة -->
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 </head>
 <body>
 
     <div class="game-container">
+        <!-- شاشة الدخول واختيار نوع الغرفة -->
         <div id="login-screen" class="screen">
             <h2>ريبليكا - Replica 🎮</h2>
-            <p class="rules-title">طريقة اللعب:</p>
-            <ul class="rules-list">
-                <li>1- اكتب اسمك واضغط دخول للعبة.</li>
-                <li>2- يتم اختيار حرف عشوائي كل جولة.</li>
-                <li>3- لكل نوع: (اسم، حيوان، نبات، جماد، دولة)، يتم اختيار لاعب عشوائي ليرسل الكلمة التي تناسب الحرف.</li>
-                <li>4- آخر لاعب يبقى دون أن يخسر يفوز باللعبة!</li>
-            </ul>
             <input type="text" id="username-input" placeholder="اكتب اسمك هنا..." maxlength="15">
-            <button id="join-btn">دخول اللعبة</button>
+            
+            <div class="room-actions">
+                <button id="create-room-btn">إنشاء غرفة جديدة 👑</button>
+                <hr style="border-color: #3f414d; margin: 15px 0;">
+                <input type="text" id="room-id-input" placeholder="أدخل رمز الغرفة للانضمام...">
+                <button id="join-room-btn" style="background-color: #28a745; color: white;">انضمام للغرفة 🚪</button>
+            </div>
         </div>
 
+        <!-- شاشة اللعب الرئيسية -->
         <div id="game-screen" class="screen hidden">
+            <div class="room-id-display">رمز الغرفة لإرساله لأصدقائك: <strong id="current-room-id" style="color: #ffbc00;">-</strong></div>
+            
             <div class="game-header">
-                <div class="current-letter">الحرف الحالي: <span id="letter-display">-</span></div>
-                <div class="timer">الوقت المتبقي: <span id="timer-display">20</span>s</div>
+                <div class="current-letter">الحرف: <span id="letter-display">-</span></div>
+                <div class="category-display">المطلوب: <span id="category-display">-</span></div>
             </div>
 
             <div class="round-info">
-                <p id="turn-instruction">في انتظار بدء اللعبة...</p>
+                <p id="turn-instruction">في انتظار بدء اللعبة من منشئ الغرفة...</p>
             </div>
 
+            <!-- ساحة الإجابة -->
             <div id="action-area" class="hidden">
-                <p>المطلوب: <strong id="required-category">...</strong></p>
                 <input type="text" id="answer-input" placeholder="اكتب الإجابة بسرعة...">
-                <button id="submit-btn">إرسال</button>
+                <button id="submit-btn">إرسال الجواب ✅</button>
             </div>
 
+            <!-- قائمة اللاعبين -->
             <div class="players-section">
-                <h3>اللاعبون المتواجدون:</h3>
+                <h3>اللاعبون المتصلون:</h3>
                 <ul id="players-list"></ul>
             </div>
 
-            <button id="start-game-btn" class="admin-btn hidden">ابدأ الجولة 🚀</button>
+            <button id="start-game-btn" class="admin-btn hidden">ابدأ الجولة التالية 🚀</button>
         </div>
     </div>
 
     <script>
-        // --- إعدادات Firebase ---
-        // ملاحظة: ضع إعدادات مشروع Firebase الخاص بك هنا لكي تعمل اللعبة أونلاين
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-        
-        // تفعيل فايبربيز
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+        let peer = null;
+        let conn = null; // للمشتركين: الاتصال بالمضيف
+        let connections = []; // للمضيف: قائمة بكل اتصالات المشتركين
+        let players = []; // قائمة بأسماء اللاعبين وحالتهم
+        let myId = "";
+        let myUsername = "";
+        let isHost = false;
 
-        // متغيرات اللعبة المحلية
-        let myPlayerId = '';
-        let myUsername = '';
         const categories = ["اسم", "حيوان", "نبات", "جماد", "دولة"];
         const letters = "أبتثجحخدذرزسشصضطظعغفقكلمنهـوي";
 
@@ -76,123 +69,173 @@
         const loginScreen = document.getElementById('login-screen');
         const gameScreen = document.getElementById('game-screen');
         const usernameInput = document.getElementById('username-input');
-        const joinBtn = document.getElementById('join-btn');
+        const roomIdInput = document.getElementById('room-id-input');
+        const currentRoomId = document.getElementById('current-room-id');
         const playersList = document.getElementById('players-list');
         const startBtn = document.getElementById('start-game-btn');
         const letterDisplay = document.getElementById('letter-display');
+        const categoryDisplay = document.getElementById('category-display');
         const turnInstruction = document.getElementById('turn-instruction');
         const actionArea = document.getElementById('action-area');
-        const requiredCategory = document.getElementById('required-category');
         const answerInput = document.getElementById('answer-input');
         const submitBtn = document.getElementById('submit-btn');
 
-        // دخول اللعبة
-        joinBtn.addEventListener('click', () => {
+        // 1. إنشاء غرفة (تصبح أنت المضيف Host)
+        document.getElementById('create-room-btn').addEventListener('click', () => {
             myUsername = usernameInput.value.trim();
-            if(!myUsername) return alert('الرجاء كتابة اسمك!');
+            if(!myUsername) return alert('الرجاء كتابة اسمك أولاً!');
 
-            // إنشاء لاعب جديد في قاعدة البيانات
-            const playerRef = database.ref('players').push();
-            myPlayerId = playerRef.key;
-            
-            playerRef.set({
-                username: myUsername,
-                isAlive: true,
-                isHost: false
+            isHost = true;
+            // توليد معرف عشوائي قصير للغرفة
+            const roomId = 'REP-' + Math.floor(1000 + Math.random() * 9000);
+            peer = new Peer(roomId);
+
+            peer.on('open', (id) => {
+                myId = id;
+                initGameUI(id);
+                startBtn.classList.remove('hidden');
+                // إضافة المضيف لقائمة اللاعبين
+                players.push({ id: myId, username: myUsername, isAlive: true });
+                updatePlayersList();
             });
 
-            // جعل أول لاعب يدخل هو الـ Host (المتحكم)
-            database.ref('players').once('value', (snapshot) => {
-                const players = snapshot.val();
-                const keys = Object.keys(players);
-                if(keys[0] === myPlayerId) {
-                    database.ref('players/' + myPlayerId).update({ isHost: true });
-                    startBtn.classList.remove('hidden'); // إظهار زر البدء للمتحكم
-                }
-            });
-
-            // عند إغلاق التبويب يتم حذف اللاعب تلقائياً
-            playerRef.onDisconnect().remove();
-
-            loginScreen.classList.add('hidden');
-            gameScreen.classList.remove('hidden');
-        });
-
-        // الاستماع لتحديثات قائمة اللاعبين
-        database.ref('players').on('value', (snapshot) => {
-            playersList.innerHTML = '';
-            const players = snapshot.val() || {};
-            Object.keys(players).forEach(key => {
-                const li = document.createElement('li');
-                li.textContent = `${players[key].username} ${players[key].isAlive ? '🟢' : '💀'}`;
-                playersList.appendChild(li);
-            });
-        });
-
-        // بدء اللعبة من خلال الـ Host
-        startBtn.addEventListener('click', () => {
-            const randomLetter = letters[Math.floor(Math.random() * letters.length)];
-            
-            // جلب اللاعبين الأحياء واختيار واحد عشوائي
-            database.ref('players').once('value', (snapshot) => {
-                const players = snapshot.val() || {};
-                const alivePlayers = Object.keys(players).filter(k => players[k].isAlive);
+            // استقبال اتصالات الأصدقاء
+            peer.on('connection', (connection) => {
+                connections.push(connection);
                 
-                if(alivePlayers.length > 0) {
-                    const randomPlayer = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
-                    const randomCat = categories[Math.floor(Math.random() * categories.length)];
-
-                    database.ref('gameState').set({
-                        letter: randomLetter,
-                        activePlayer: randomPlayer,
-                        category: randomCat,
-                        status: 'playing'
-                    });
-                }
-            });
-        });
-
-        // الاستماع لحالة اللعبة ومزامنتها بين الأصدقاء
-        database.ref('gameState').on('value', (snapshot) => {
-            const state = snapshot.val();
-            if(!state) return;
-
-            letterDisplay.textContent = state.letter;
-
-            // التحقق إذا كان الدور عليّ
-            if(state.activePlayer === myPlayerId && state.status === 'playing') {
-                turnInstruction.textContent = "⭐️ دورك أنت الآن! أجب بسرعة!";
-                actionArea.classList.remove('hidden');
-                requiredCategory.textContent = state.category;
-            } else {
-                database.ref('players/' + state.activePlayer).once('value', (pSnap) => {
-                    const pData = pSnap.val();
-                    if(pData) {
-                        turnInstruction.textContent = `دور اللاعب: [ ${pData.username} ] للإجابة على (${state.category})`;
+                connection.on('data', (data) => {
+                    if(data.type === 'join') {
+                        players.push({ id: connection.peer, username: data.username, isAlive: true });
+                        updatePlayersList();
+                        broadcast({ type: 'update_players', players: players });
+                    }
+                    if(data.type === 'submit_answer') {
+                        handleAnswer(connection.peer, data.answer);
                     }
                 });
+            });
+        });
+
+        // 2. الانضمام لغرفة موجودة
+        document.getElementById('join-room-btn').addEventListener('click', () => {
+            myUsername = usernameInput.value.trim();
+            const targetRoomId = roomIdInput.value.trim();
+            if(!myUsername || !targetRoomId) return alert('الرجاء إدخال اسمك ورمز الغرفة!');
+
+            isHost = false;
+            peer = new Peer(); // معرف عشوائي للمشترك
+
+            peer.on('open', (id) => {
+                myId = id;
+                conn = peer.connect(targetRoomId);
+
+                conn.on('open', () => {
+                    initGameUI(targetRoomId);
+                    conn.send({ type: 'join', username: myUsername });
+                });
+
+                conn.on('data', (data) => {
+                    if(data.type === 'update_players') {
+                        players = data.players;
+                        updatePlayersList();
+                    }
+                    if(data.type === 'new_round') {
+                        startNewRoundClient(data);
+                    }
+                });
+            });
+        });
+
+        // تهيئة الشاشة بعد الدخول
+        function initGameUI(roomId) {
+            currentRoomId.textContent = roomId;
+            loginScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+        }
+
+        // تحديث قائمة اللاعبين على الشاشة
+        function updatePlayersList() {
+            playersList.innerHTML = '';
+            players.forEach(p => {
+                const li = document.createElement('li');
+                li.textContent = `${p.username} ${p.isAlive ? '🟢' : '💀'}`;
+                playersList.appendChild(li);
+            });
+        }
+
+        // إرسال البيانات لجميع اللاعبين (خاص بالمضيف فقط)
+        function broadcast(data) {
+            connections.forEach(c => {
+                if(c.open) c.send(data);
+            });
+        }
+
+        // --- منطق اللعبة وجريان الجولات ---
+        
+        // المضيف يضغط "ابدأ الجولة"
+        startBtn.addEventListener('click', () => {
+            if(!isHost) return;
+            
+            const alivePlayers = players.filter(p => p.isAlive);
+            if(alivePlayers.length === 0) return alert('لا يوجد لاعبين أحياء!');
+
+            const randomLetter = letters[Math.floor(Math.random() * letters.length)];
+            const randomCat = categories[Math.floor(Math.random() * categories.length)];
+            const activePlayer = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+
+            const roundData = {
+                type: 'new_round',
+                letter: randomLetter,
+                category: randomCat,
+                activePlayerId: activePlayer.id
+            };
+
+            // إرسال الجولة للكل وتحديث شاشة المضيف نفسه
+            broadcast(roundData);
+            startNewRoundClient(roundData);
+        });
+
+        // استقبال وتطبيق الجولة الجديدة عند الجميع
+        function startNewRoundClient(data) {
+            letterDisplay.textContent = data.letter;
+            categoryDisplay.textContent = data.category;
+            answerInput.value = '';
+
+            const activePlayer = players.find(p => p.id === data.activePlayerId);
+
+            if(data.activePlayerId === myId) {
+                turnInstruction.textContent = "⭐️ دورك أنت! اكتب الإجابة بسرعة!";
+                actionArea.classList.remove('hidden');
+            } else {
+                turnInstruction.textContent = `دور اللاعب: [ ${activePlayer ? activePlayer.username : 'غير معروف'} ]`;
                 actionArea.classList.add('hidden');
+            }
+        }
+
+        // الضغط على زر إرسال الإجابة
+        submitBtn.addEventListener('click', () => {
+            const answer = answerInput.value.trim();
+            if(!answer) return;
+
+            if(isHost) {
+                handleAnswer(myId, answer);
+            } else {
+                conn.send({ type: 'submit_answer', answer: answer });
             }
         });
 
-        // إرسال الإجابة
-        submitBtn.addEventListener('click', () => {
-            const ans = answerInput.value.trim();
-            if(!ans) return;
-            
-            // تحقق بسيط: يجب أن تبدأ الإجابة بالحرف المختار
-            database.ref('gameState').once('value', (snapshot) => {
-                const state = snapshot.val();
-                if(ans.startsWith(state.letter)) {
-                    alert('إجابة صحيحة! تم الانتقال للجولة التالية.');
-                    answerInput.value = '';
-                    // هنا يقوم النظام تلقائياً بطلب جولة جديدة (يمكنك تطويرها لتبديل الأدوار)
-                    startBtn.click(); 
-                } else {
-                    alert(`يجب أن تبدأ الكلمة بحرف ${state.letter}!`);
-                }
-            });
-        });
+        // معالجة الإجابة والتحقق منها (عند المضيف)
+        function handleAnswer(playerId, answer) {
+            const currentLetter = letterDisplay.textContent;
+            const player = players.find(p => p.id === playerId);
+
+            if(answer.startsWith(currentLetter)) {
+                alert(`إجابة صحيحة من ${player.username}! اضغط لبدء جولة جديدة.`);
+                actionArea.classList.add('hidden');
+            } else {
+                alert(`إجابة خاطئة! الكلمة لم تبدأ بحرف ${currentLetter}`);
+            }
+        }
     </script>
 </body>
 </html>
