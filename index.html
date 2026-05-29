@@ -3,61 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لعبة ريبليكا - نسخة P2P</title>
+    <title>King Anwar - لعبة ريبليكا</title>
     <link rel="stylesheet" href="style.css">
-    <!-- استدعاء مكتبة PeerJS للربط المباشر بين الأجهزة -->
+    <!-- استدعاء خط جوجول العسكري والعصري Cairo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- مكتبة PeerJS للربط المباشر بين الأصدقاء -->
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 </head>
 <body>
 
-    <div class="game-container">
-        <!-- شاشة الدخول واختيار نوع الغرفة -->
+    <div class="game-container animate-glow">
+        <!-- شاشة الدخول العصرية -->
         <div id="login-screen" class="screen">
-            <h2>ريبليكا - Replica 🎮</h2>
-            <input type="text" id="username-input" placeholder="اكتب اسمك هنا..." maxlength="15">
+            <h1 class="game-title">KING ANWAR</h1>
+            <p class="rules-title">📜 طريقة اللعب:</p>
+            <ul class="rules-list">
+                <li><span class="step-num">1</span> اكتب اسمك واصنع غرفة أو انضم لأصدقائك.</li>
+                <li><span class="step-num">2</span> يتم اختيار حرف عشوائي ونوع عشوائي في كل جولة.</li>
+                <li><span class="step-num">3</span> يتم اختيار لاعب عشوائي ليرسل الكلمة المناسبة للحرف.</li>
+                <li><span class="step-num">4</span> آخر لاعب يصمد دون خطأ يفوز بالتحدي!</li>
+            </ul>
+            
+            <input type="text" id="username-input" class="modern-input" placeholder="👤 اكتب اسمك هنا..." maxlength="15">
             
             <div class="room-actions">
-                <button id="create-room-btn">إنشاء غرفة جديدة 👑</button>
-                <hr style="border-color: #3f414d; margin: 15px 0;">
-                <input type="text" id="room-id-input" placeholder="أدخل رمز الغرفة للانضمام...">
-                <button id="join-room-btn" style="background-color: #28a745; color: white;">انضمام للغرفة 🚪</button>
+                <button id="create-room-btn" class="btn btn-primary">إنشاء غرفة جديدة 👑</button>
+                <div class="separator">أو</div>
+                <input type="text" id="room-id-input" class="modern-input" placeholder="🔑 أدخل رمز الغرفة...">
+                <button id="join-room-btn" class="btn btn-secondary">انضمام للغرفة 🚪</button>
             </div>
         </div>
 
         <!-- شاشة اللعب الرئيسية -->
         <div id="game-screen" class="screen hidden">
-            <div class="room-id-display">رمز الغرفة لإرساله لأصدقائك: <strong id="current-room-id" style="color: #ffbc00;">-</strong></div>
+            <div class="room-id-display">
+                رمز الغرفة للمشاركة: <strong id="current-room-id">-</strong>
+            </div>
             
-            <div class="game-header">
-                <div class="current-letter">الحرف: <span id="letter-display">-</span></div>
-                <div class="category-display">المطلوب: <span id="category-display">-</span></div>
+            <div class="game-header-grid">
+                <div class="header-card">
+                    <span class="card-label">الحرف الحالي</span>
+                    <span id="letter-display" class="card-value">-</span>
+                </div>
+                <div class="header-card">
+                    <span class="card-label">المطلوب</span>
+                    <span id="category-display" class="card-value">-</span>
+                </div>
             </div>
 
-            <div class="round-info">
-                <p id="turn-instruction">في انتظار بدء اللعبة من منشئ الغرفة...</p>
+            <div class="round-status-box">
+                <p id="turn-instruction">في انتظار المضيف لبدء المعركة...</p>
             </div>
 
-            <!-- ساحة الإجابة -->
-            <div id="action-area" class="hidden">
-                <input type="text" id="answer-input" placeholder="اكتب الإجابة بسرعة...">
-                <button id="submit-btn">إرسال الجواب ✅</button>
+            <!-- ساحة الإجابة السريعة -->
+            <div id="action-area" class="action-zone hidden">
+                <input type="text" id="answer-input" class="modern-input pulse-border" placeholder="🚀 اكتب الإجابة بسرعة الفلاش...">
+                <button id="submit-btn" class="btn btn-success">إرسال الجواب ✅</button>
             </div>
 
-            <!-- قائمة اللاعبين -->
+            <!-- قائمة اللاعبين المتصلين بشكل بطاقات مصغرة -->
             <div class="players-section">
-                <h3>اللاعبون المتصلون:</h3>
-                <ul id="players-list"></ul>
+                <h3>🎮 المقاتلون المتصلون:</h3>
+                <div id="players-grid" class="players-grid"></div>
             </div>
 
-            <button id="start-game-btn" class="admin-btn hidden">ابدأ الجولة التالية 🚀</button>
+            <button id="start-game-btn" class="btn btn-admin hidden">ابدأ الجولة التالية 🔥</button>
         </div>
     </div>
 
     <script>
         let peer = null;
-        let conn = null; // للمشتركين: الاتصال بالمضيف
-        let connections = []; // للمضيف: قائمة بكل اتصالات المشتركين
-        let players = []; // قائمة بأسماء اللاعبين وحالتهم
+        let conn = null;
+        let connections = [];
+        let players = [];
         let myId = "";
         let myUsername = "";
         let isHost = false;
@@ -65,13 +85,12 @@
         const categories = ["اسم", "حيوان", "نبات", "جماد", "دولة"];
         const letters = "أبتثجحخدذرزسشصضطظعغفقكلمنهـوي";
 
-        // عناصر الواجهة
         const loginScreen = document.getElementById('login-screen');
         const gameScreen = document.getElementById('game-screen');
         const usernameInput = document.getElementById('username-input');
         const roomIdInput = document.getElementById('room-id-input');
         const currentRoomId = document.getElementById('current-room-id');
-        const playersList = document.getElementById('players-list');
+        const playersGrid = document.getElementById('players-grid');
         const startBtn = document.getElementById('start-game-btn');
         const letterDisplay = document.getElementById('letter-display');
         const categoryDisplay = document.getElementById('category-display');
@@ -80,33 +99,27 @@
         const answerInput = document.getElementById('answer-input');
         const submitBtn = document.getElementById('submit-btn');
 
-        // 1. إنشاء غرفة (تصبح أنت المضيف Host)
         document.getElementById('create-room-btn').addEventListener('click', () => {
             myUsername = usernameInput.value.trim();
             if(!myUsername) return alert('الرجاء كتابة اسمك أولاً!');
-
             isHost = true;
-            // توليد معرف عشوائي قصير للغرفة
-            const roomId = 'REP-' + Math.floor(1000 + Math.random() * 9000);
+            const roomId = 'ANWAR-' + Math.floor(1000 + Math.random() * 9000);
             peer = new Peer(roomId);
 
             peer.on('open', (id) => {
                 myId = id;
                 initGameUI(id);
                 startBtn.classList.remove('hidden');
-                // إضافة المضيف لقائمة اللاعبين
                 players.push({ id: myId, username: myUsername, isAlive: true });
-                updatePlayersList();
+                updatePlayersUI();
             });
 
-            // استقبال اتصالات الأصدقاء
             peer.on('connection', (connection) => {
                 connections.push(connection);
-                
                 connection.on('data', (data) => {
                     if(data.type === 'join') {
                         players.push({ id: connection.peer, username: data.username, isAlive: true });
-                        updatePlayersList();
+                        updatePlayersUI();
                         broadcast({ type: 'update_players', players: players });
                     }
                     if(data.type === 'submit_answer') {
@@ -116,28 +129,24 @@
             });
         });
 
-        // 2. الانضمام لغرفة موجودة
         document.getElementById('join-room-btn').addEventListener('click', () => {
             myUsername = usernameInput.value.trim();
-            const targetRoomId = roomIdInput.value.trim();
+            const targetRoomId = roomIdInput.value.trim().toUpperCase();
             if(!myUsername || !targetRoomId) return alert('الرجاء إدخال اسمك ورمز الغرفة!');
-
             isHost = false;
-            peer = new Peer(); // معرف عشوائي للمشترك
+            peer = new Peer();
 
             peer.on('open', (id) => {
                 myId = id;
                 conn = peer.connect(targetRoomId);
-
                 conn.on('open', () => {
                     initGameUI(targetRoomId);
                     conn.send({ type: 'join', username: myUsername });
                 });
-
                 conn.on('data', (data) => {
                     if(data.type === 'update_players') {
                         players = data.players;
-                        updatePlayersList();
+                        updatePlayersUI();
                     }
                     if(data.type === 'new_round') {
                         startNewRoundClient(data);
@@ -146,39 +155,34 @@
             });
         });
 
-        // تهيئة الشاشة بعد الدخول
         function initGameUI(roomId) {
             currentRoomId.textContent = roomId;
             loginScreen.classList.add('hidden');
             gameScreen.classList.remove('hidden');
         }
 
-        // تحديث قائمة اللاعبين على الشاشة
-        function updatePlayersList() {
-            playersList.innerHTML = '';
+        function updatePlayersUI() {
+            playersGrid.innerHTML = '';
             players.forEach(p => {
-                const li = document.createElement('li');
-                li.textContent = `${p.username} ${p.isAlive ? '🟢' : '💀'}`;
-                playersList.appendChild(li);
+                const card = document.createElement('div');
+                card.className = `player-card ${p.isAlive ? 'alive' : 'dead'}`;
+                card.innerHTML = `
+                    <div class="player-avatar">${p.username[0].toUpperCase()}</div>
+                    <div class="player-name">${p.username}</div>
+                    <div class="player-status">${p.isAlive ? '🟢 نشط' : '💀 خسر'}</div>
+                `;
+                playersGrid.appendChild(card);
             });
         }
 
-        // إرسال البيانات لجميع اللاعبين (خاص بالمضيف فقط)
         function broadcast(data) {
-            connections.forEach(c => {
-                if(c.open) c.send(data);
-            });
+            connections.forEach(c => { if(c.open) c.send(data); });
         }
 
-        // --- منطق اللعبة وجريان الجولات ---
-        
-        // المضيف يضغط "ابدأ الجولة"
         startBtn.addEventListener('click', () => {
             if(!isHost) return;
-            
             const alivePlayers = players.filter(p => p.isAlive);
-            if(alivePlayers.length === 0) return alert('لا يوجد لاعبين أحياء!');
-
+            if(alivePlayers.length === 0) return alert('لا يوجد لاعبين أحياء للبدء!');
             const randomLetter = letters[Math.floor(Math.random() * letters.length)];
             const randomCat = categories[Math.floor(Math.random() * categories.length)];
             const activePlayer = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
@@ -189,51 +193,40 @@
                 category: randomCat,
                 activePlayerId: activePlayer.id
             };
-
-            // إرسال الجولة للكل وتحديث شاشة المضيف نفسه
             broadcast(roundData);
             startNewRoundClient(roundData);
         });
 
-        // استقبال وتطبيق الجولة الجديدة عند الجميع
         function startNewRoundClient(data) {
             letterDisplay.textContent = data.letter;
             categoryDisplay.textContent = data.category;
             answerInput.value = '';
-
             const activePlayer = players.find(p => p.id === data.activePlayerId);
 
             if(data.activePlayerId === myId) {
-                turnInstruction.textContent = "⭐️ دورك أنت! اكتب الإجابة بسرعة!";
+                turnInstruction.innerHTML = "⚡️ <span style='color:#ff007f;'>دورك أنت الآن! أجب بسرعة!</span>";
                 actionArea.classList.remove('hidden');
+                answerInput.focus();
             } else {
-                turnInstruction.textContent = `دور اللاعب: [ ${activePlayer ? activePlayer.username : 'غير معروف'} ]`;
+                turnInstruction.textContent = `انتظر.. اللاعب [ ${activePlayer ? activePlayer.username : 'مجهول'} ] يفكر الآن 🤔`;
                 actionArea.classList.add('hidden');
             }
         }
 
-        // الضغط على زر إرسال الإجابة
         submitBtn.addEventListener('click', () => {
             const answer = answerInput.value.trim();
             if(!answer) return;
-
-            if(isHost) {
-                handleAnswer(myId, answer);
-            } else {
-                conn.send({ type: 'submit_answer', answer: answer });
-            }
+            if(isHost) { handleAnswer(myId, answer); } else { conn.send({ type: 'submit_answer', answer: answer }); }
         });
 
-        // معالجة الإجابة والتحقق منها (عند المضيف)
         function handleAnswer(playerId, answer) {
             const currentLetter = letterDisplay.textContent;
             const player = players.find(p => p.id === playerId);
-
             if(answer.startsWith(currentLetter)) {
-                alert(`إجابة صحيحة من ${player.username}! اضغط لبدء جولة جديدة.`);
+                alert(`🎯 كفو! إجابة صحيحة من ${player.username}. جاهز للجولة التالية؟`);
                 actionArea.classList.add('hidden');
             } else {
-                alert(`إجابة خاطئة! الكلمة لم تبدأ بحرف ${currentLetter}`);
+                alert(`💥 خطأ! الكلمة "${answer}" لا تبدأ بحرف (${currentLetter})`);
             }
         }
     </script>
