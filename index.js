@@ -1,6 +1,6 @@
 /**
  * بوت لعبة "ربليكا" (Replica) الجماعية لواتساب
- * تم استخدام مكتبة Baileys لتفادي أخطاء متصفح Puppeteer والـ Crashes على سيرفرات الاستضافة
+ * نسخة معدلة لمنصة Render (تم تحويل رسائل السيرفر للإنجليزية لعدم قلب الحروف العربية)
  */
 
 const { 
@@ -8,48 +8,63 @@ const {
     useMultiFileAuthState, 
     DisconnectReason 
 } = require('@whiskeysockets/baileys');
-const qrcode = require('qrcode-terminal');
 const pino = require('pino');
+const readline = require('readline');
+
+const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+const question = (text) => new Promise((resolve) => rl.question(text, resolve));
 
 const ARABIC_LETTERS = ['أ', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'هـ', 'و', 'ي'];
 const CATEGORIES = ['اسم', 'حيوان', 'نبات', 'جماد', 'دولة'];
 const games = {};
 
 async function startBot() {
-    // إعداد حفظ جلسة تسجيل الدخول تلقائياً في مجلد auth_info
     const { state, saveCreds } = await useMultiFileAuthState('auth_info');
 
     const sock = makeWASocket({
         auth: state,
-        printQRInTerminal: false, // سنطبعه باستخدام qrcode-terminal بشكل منظم
+        printQRInTerminal: false, 
         logger: pino({ level: 'silent' }),
-        browser: ['Replica Bot', 'Chrome', '1.0.0']
+        browser: ['Ubuntu', 'Chrome', '20.0.04'] 
     });
 
-    // حفظ التحديثات على الجلسة أولاً بأول
+    // === رقم الهاتف الخاص بك ===
+    const phoneNumber = "212674636956"; 
+
+    if (!sock.authState.creds.registered) {
+        setTimeout(async () => {
+            try {
+                console.log(`\n[!] Requesting Pairing Code for: ${phoneNumber} ...`);
+                let code = await sock.requestPairingCode(phoneNumber);
+                code = code?.match(/.{1,4}/g)?.join('-') || code;
+                
+                // هنا تم تعديل الكتابة لتظهر بالإنجليزية والفرانكو بوضوح في Render دون انقلاب الحروف
+                console.log(`\n==================================================`);
+                console.log(`👑 YOUR PAIRING CODE IS: 🔥 【 ${code} 】 🔥`);
+                console.log(`==================================================\n`);
+                console.log(`👉 Open WhatsApp -> Linked Devices -> Link with phone number -> Enter the code above.`);
+            } catch (error) {
+                console.error('❌ Error requesting pairing code:', error);
+            }
+        }, 3000); 
+    }
+
     sock.ev.on('creds.update', saveCreds);
 
-    // إدارة الاتصال وكود الـ QR
     sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect, qr } = update;
-        
-        if (qr) {
-            qrcode.generate(qr, { small: true });
-            console.log('=== امسح كود الـ QR أعلاه لتشغيل البوت على هاتف آخر ===');
-        }
+        const { connection, lastDisconnect } = update;
 
         if (connection === 'close') {
             const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-            console.log('❌ تم إغلاق الاتصال بسبب: ', lastDisconnect?.error, '. جاري إعادة الاتصال: ', shouldReconnect);
+            console.log('[!] Connection closed. Reconnecting: ', shouldReconnect);
             if (shouldReconnect) {
                 startBot();
             }
         } else if (connection === 'open') {
-            console.log('🤖 تم الاتصال بنجاح! بوت لعبة ربليكا جاهز للعمل في المجموعات.');
+            console.log('\n[+] SUCCESS: Bot is now connected and running perfectly!');
         }
     });
 
-    // استقبال الرسائل وإدارة اللعبة
     sock.ev.on('messages.upsert', async (m) => {
         const msg = m.messages[0];
         if (!msg.message || msg.key.fromMe) return;
@@ -57,19 +72,17 @@ async function startBot() {
         const chatId = msg.key.remoteJid;
         const senderId = msg.key.participant || msg.key.remoteJid;
         
-        // استخراج النص من الرسالة بمرونة
         const body = (msg.message.conversation || 
                       msg.message.extendedTextMessage?.text || 
                       '').trim();
 
         const playerName = msg.pushName || 'لاعب';
 
-        // دالة مساعدة لإرسال الرسائل بسهولة مع منشن
         const sendMessage = async (text, mentions = []) => {
             await sock.sendMessage(chatId, { text, mentions }, { quoted: msg });
         };
 
-        // 1. أمر إنشاء اللعبة
+        // 1. أمر إنشاء اللعبة (عربي بالكامل داخل الواتساب)
         if (body === '!ربليكا' || body === '!انشاء') {
             if (games[chatId]) {
                 return sendMessage('❌ هناك لعبة قائمة بالفعل في هذه المجموعة أو التسجيل مفتوح!');
@@ -129,14 +142,13 @@ async function startBot() {
             return;
         }
 
-        // 4. فحص إجابات اللاعب المستهدف أثناء اللعب
+        // 4. فحص الإجابات
         const game = games[chatId];
         if (game && game.status === 'playing' && game.currentPlayerTurn) {
             if (senderId === game.currentPlayerTurn.id) {
                 const currentCategory = CATEGORIES[game.currentCategoryIndex];
                 const requiredLetter = game.currentLetter;
 
-                // التحقق من الحرف الأول مع تجاهل ال التعريف إن وجدت لتسهيل اللعب
                 let cleanBody = body;
                 if (body.startsWith('ال') && body.length > 2) {
                     cleanBody = body.substring(2);
@@ -253,5 +265,4 @@ function endGame(sock, chatId) {
     delete games[chatId];
 }
 
-// تشغيل البوت
 startBot();
