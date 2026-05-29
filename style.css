@@ -1,0 +1,120 @@
+body {
+    background-color: #121317;
+    color: #ffffff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.game-container {
+    width: 90%;
+    max-width: 500px;
+    background-color: #1a1b22;
+    border-right: 5px solid #ffbc00; /* الخط الأصفر الجانبي مثل الصورة */
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+.screen {
+    display: flex;
+    flex-direction: column;
+}
+
+h2 {
+    text-align: center;
+    color: #ffbc00;
+}
+
+.rules-title {
+    text-decoration: underline;
+    font-size: 1.2rem;
+    margin-bottom: 5px;
+}
+
+.rules-list {
+    list-style: none;
+    padding: 0;
+    line-height: 1.8;
+}
+
+input[type="text"] {
+    background-color: #25262e;
+    border: 1px solid #3f414d;
+    color: #fff;
+    padding: 12px;
+    border-radius: 5px;
+    margin-top: 15px;
+    font-size: 1rem;
+    text-align: center;
+}
+
+button {
+    background-color: #ffbc00;
+    color: #000;
+    border: none;
+    padding: 12px;
+    font-weight: bold;
+    font-size: 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: 0.2s;
+}
+
+button:hover {
+    background-color: #ffd043;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    background: #25262e;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.current-letter span {
+    color: #ffbc00;
+    font-size: 1.3rem;
+}
+
+.round-info {
+    text-align: center;
+    margin: 20px 0;
+    font-size: 1.1rem;
+    background-color: #2b2c36;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.players-section {
+    margin-top: 20px;
+    background: #15161a;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.players-section ul {
+    list-style: none;
+    padding: 0;
+}
+
+.players-section li {
+    padding: 5px 10px;
+    border-bottom: 1px solid #25262e;
+}
+
+.admin-btn {
+    background-color: #28a745;
+    color: white;
+}
